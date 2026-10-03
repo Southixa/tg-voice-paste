@@ -1,5 +1,4 @@
-// fetch reports every network failure as a bare TypeError; the useful code sits on its cause,
-// or on the first of several causes when more than one address was tried.
+// fetch reports every network failure as a bare TypeError; the useful detail sits on its cause.
 export function networkErrorCode(err) {
-  return err.cause?.code ?? err.cause?.errors?.[0]?.code ?? err.name;
+  return err.cause?.code ?? err.cause?.message ?? err.name;
 }
