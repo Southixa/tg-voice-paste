@@ -1,0 +1,23 @@
+{
+  "name": "tg-voice-paste",
+  "version": "0.1.0",
+  "description": "Send a voice message to your Telegram bot; this Mac transcribes it with Gemini and pastes the text at the cursor.",
+  "type": "module",
+  "bin": {
+    "tgvoice": "bin/tgvoice.js"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin"
+  ],
+  "repository": "github:Southixa/tg-voice-paste"
+}
