@@ -36,6 +36,24 @@ tgvoice
 3. ຈັບຄູ່: ເປີດ bot ໃນ Telegram ແລ້ວກົດ Start, ຈາກນັ້ນຢືນຢັນໃນ Terminal ວ່າແມ່ນເຈົ້າ
 4. ທົດສອບ paste
 
+## ຕິດຕັ້ງດ້ວຍຄຳສັ່ງດຽວ
+
+ກຽມຄຳສັ່ງໄວ້ລ່ວງໜ້າ ແລ້ວ paste ໃສ່ Terminal ຂອງຄອມໃໝ່. ມັນຈະຕິດຕັ້ງ, ຕັ້ງຄ່າ ແລະ ເລີ່ມຮັບສຽງ. ເຫຼືອແຕ່ເປີດສິດ Accessibility ຕອນມັນທົດສອບ paste.
+
+```bash
+npm install -g https://github.com/Southixa/tg-voice-paste/tarball/main && tgvoice setup --gemini-key 'GEMINI_KEY' --bot-token 'BOT_TOKEN' --owner TELEGRAM_ID && tgvoice
+```
+
+ໃນຄອມທີ່ຕັ້ງຄ່າແລ້ວ ຄຳສັ່ງນີ້ຈະພິມຄຳສັ່ງຂ້າງເທິງອອກມາ ພ້ອມ Gemini key ແລະ Telegram ID ຂອງເຈົ້າ. ເຫຼືອແຕ່ໃສ່ token ຂອງ bot ໃໝ່:
+
+```bash
+tgvoice template
+```
+
+`--owner` ແມ່ນເລກ Telegram ID ຂອງເຈົ້າ. ໃສ່ແລ້ວ ຈະບໍ່ຕ້ອງຢືນຢັນການຈັບຄູ່ໃນ Terminal, ແຕ່ຍັງຕ້ອງກົດ Start ໃນ bot ໃໝ່ເທື່ອໜຶ່ງ ເພື່ອໃຫ້ມັນຕອບກັບໄດ້.
+
+ຄຳສັ່ງທີ່ມີ key ແລະ token ຈະຄ້າງຢູ່ໃນປະຫວັດ shell ຂອງຄອມນັ້ນ (`~/.zsh_history`).
+
 ## ສິດທີ່ຕ້ອງເປີດ (ເທື່ອດຽວຕໍ່ຄອມ)
 
 ການກົດ Cmd+V ແທນເຈົ້າຕ້ອງໃຊ້ສິດ **Accessibility** ຂອງແອັບ Terminal ທີ່ແລ່ນ `tgvoice`:

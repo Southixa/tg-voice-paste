@@ -8,6 +8,7 @@ import { createTelegram } from './telegram.js';
 
 const PAIRING_POLL_SEC = 30;
 const PASTE_PROBE = 'tgvoice-ok';
+const PAIRED_MESSAGE = '✅ ຈັບຄູ່ແລ້ວ. ສົ່ງ voice message ມາໄດ້ເລີຍ.';
 const ACCESSIBILITY_PANE = 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility';
 
 function mask(secret) {
@@ -23,6 +24,7 @@ export async function runSetup({
   output = process.stdout,
   paste = pasteAtCursor,
   openSettings = openAccessibilitySettings,
+  preset = {},
 } = {}) {
   const config = loadConfig();
   // In a real terminal readline echoes each typed character itself, so muting what it writes
@@ -57,10 +59,17 @@ export async function runSetup({
   });
 
   // Asks until `validate` accepts the answer. Enter keeps the current value when there is one.
-  async function askUntilValid(label, current, validate) {
+  // A value given on the command line is tried first; only a rejected one leads to a prompt.
+  async function askUntilValid(label, current, validate, given) {
     for (;;) {
-      const hint = current ? ` [Enter = ໃຊ້ໂຕເກົ່າ ${mask(current)}]` : '';
-      const answer = (await askSecret(`${label}${hint}: `)) || current;
+      let answer = given;
+      given = undefined;
+      if (answer) {
+        say(`${label}: ${mask(answer)}`);
+      } else {
+        const hint = current ? ` [Enter = ໃຊ້ໂຕເກົ່າ ${mask(current)}]` : '';
+        answer = (await askSecret(`${label}${hint}: `)) || current;
+      }
       if (!answer) continue;
       try {
         return { value: answer, result: await validate(answer) };
@@ -89,6 +98,17 @@ export async function runSetup({
     }
   }
 
+  // A bot cannot message someone who has not opened it yet, so a failure here only means that
+  // Start has not been pressed in this bot.
+  async function greetOwner(telegram, ownerId) {
+    try {
+      const { chat } = await telegram.sendMessage(ownerId, PAIRED_MESSAGE);
+      return [chat.first_name, chat.last_name].filter(Boolean).join(' ') || null;
+    } catch {
+      return null;
+    }
+  }
+
   // Pastes a probe word into this very prompt, which also makes macOS show its permission dialogs
   // now, while the user is at the keyboard, instead of on the first real voice message.
   async function testPaste() {
@@ -114,12 +134,12 @@ export async function runSetup({
 
   try {
     say('\n1/4  Gemini API key  (https://aistudio.google.com/apikey)');
-    const gemini = await askUntilValid('  API key', config.geminiApiKey, (key) => checkApiKey(key, config.model));
+    const gemini = await askUntilValid('  API key', config.geminiApiKey, (key) => checkApiKey(key, config.model), preset.geminiApiKey);
     config.geminiApiKey = gemini.value;
     say(`  ✅ ໃຊ້ໄດ້ກັບ ${config.model}`);
 
     say('\n2/4  Telegram bot token  (ສ້າງ bot ໃໝ່ໃນ @BotFather ດ້ວຍຄຳສັ່ງ /newbot)');
-    const bot = await askUntilValid('  Bot token', config.botToken, (token) => createTelegram(token).getMe());
+    const bot = await askUntilValid('  Bot token', config.botToken, (token) => createTelegram(token).getMe(), preset.botToken);
     const tokenChanged = bot.value !== config.botToken;
     config.botToken = bot.value;
     config.botUsername = bot.result.username;
@@ -127,14 +147,23 @@ export async function runSetup({
 
     const telegram = createTelegram(config.botToken);
     say('\n3/4  ຈັບຄູ່ກັບບັນຊີ Telegram ຂອງເຈົ້າ');
-    if (config.ownerId && !tokenChanged) {
+    if (preset.ownerId) {
+      const name = await greetOwner(telegram, preset.ownerId);
+      config.ownerId = preset.ownerId;
+      config.ownerName = name ?? `Telegram ID ${preset.ownerId}`;
+      say(
+        name
+          ? `  ✅ ຈັບຄູ່ກັບ ${name} ແລ້ວ. ຄົນອື່ນສັ່ງ bot ນີ້ບໍ່ໄດ້.`
+          : `  ✅ ຮັບສະເພາະ ${config.ownerName}. ເປີດ https://t.me/${config.botUsername} ແລ້ວກົດ Start ເພື່ອເລີ່ມໃຊ້.`,
+      );
+    } else if (config.ownerId && !tokenChanged) {
       say(`  ✅ ຈັບຄູ່ກັບ ${config.ownerName} ຢູ່ແລ້ວ`);
     } else {
       say(`  ເປີດ https://t.me/${config.botUsername} ໃນ Telegram ແລ້ວກົດ Start. ກຳລັງລໍ...`);
       const owner = await waitForOwner(telegram);
       config.ownerId = owner.id;
       config.ownerName = owner.name;
-      await telegram.sendMessage(owner.chatId, '✅ ຈັບຄູ່ແລ້ວ. ສົ່ງ voice message ມາໄດ້ເລີຍ.');
+      await telegram.sendMessage(owner.chatId, PAIRED_MESSAGE);
       say(`  ✅ ຈັບຄູ່ກັບ ${owner.name} ແລ້ວ. ຄົນອື່ນສັ່ງ bot ນີ້ບໍ່ໄດ້.`);
     }
     saveConfig(config);

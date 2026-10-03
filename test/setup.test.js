@@ -45,6 +45,11 @@ beforeEach(async () => {
     if (url === `/bot${TOKEN}/getUpdates` && body.offset === undefined) {
       return { json: { ok: true, result: [privateMessage(1, 999, 'Stranger'), privateMessage(2, 111, 'Pele')] } };
     }
+    if (url === `/bot${TOKEN}/sendMessage`) {
+      // Telegram refuses to message someone who has never opened the bot.
+      if (body.chat_id === 222) return { status: 403, json: { ok: false, error_code: 403, description: 'Forbidden: bot can\'t initiate conversation with a user' } };
+      return { json: { ok: true, result: { chat: { id: body.chat_id, first_name: 'Pele', last_name: 'Plv' } } } };
+    }
     return { json: { ok: true, result: [] } };
   });
   servers = { gemini, telegram };
@@ -116,4 +121,48 @@ test('keeps the existing key, token and pairing when Enter is pressed', async ()
   assert.equal(config.ownerId, 111);
   assert.match(term.printed(), /ຈັບຄູ່ກັບ Pele ຢູ່ແລ້ວ/);
   assert.ok(!servers.telegram.requests.some((r) => r.path.endsWith('/getUpdates')));
+});
+
+test('values given up front skip every question except the paste test', async () => {
+  const term = terminal([]);
+  const paste = async (text) => term.input.write(`${text}\n`);
+  const preset = { geminiApiKey: 'good-key', botToken: TOKEN, ownerId: 111 };
+
+  const config = await runSetup({ input: term.input, output: term.output, paste, preset });
+
+  assert.partialDeepStrictEqual(config, { geminiApiKey: 'good-key', botToken: TOKEN, ownerId: 111, ownerName: 'Pele Plv' });
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(home, 'config.json'), 'utf8')), config);
+  assert.ok(!servers.telegram.requests.some((r) => r.path.endsWith('/getUpdates')), 'no pairing poll');
+  assert.ok(!term.printed().includes('good-key') && !term.printed().includes(TOKEN), 'secrets are never printed');
+  assert.match(term.printed(), /✅ ຈັບຄູ່ກັບ Pele Plv ແລ້ວ/);
+});
+
+test('an owner who has not opened the bot yet is still paired and told to press Start', async () => {
+  const term = terminal([]);
+  const paste = async (text) => term.input.write(`${text}\n`);
+
+  const config = await runSetup({
+    input: term.input,
+    output: term.output,
+    paste,
+    preset: { geminiApiKey: 'good-key', botToken: TOKEN, ownerId: 222 },
+  });
+
+  assert.partialDeepStrictEqual(config, { ownerId: 222, ownerName: 'Telegram ID 222' });
+  assert.match(term.printed(), /t\.me\/office_mac_bot ແລ້ວກົດ Start/);
+});
+
+test('a rejected value given up front falls back to asking', async () => {
+  const term = terminal(['good-key']);
+  const paste = async (text) => term.input.write(`${text}\n`);
+
+  const config = await runSetup({
+    input: term.input,
+    output: term.output,
+    paste,
+    preset: { geminiApiKey: 'expired-key-0123456789', botToken: TOKEN, ownerId: 111 },
+  });
+
+  assert.equal(config.geminiApiKey, 'good-key');
+  assert.match(term.printed(), /API key: expi…789\n {2}❌ Gemini 400: API key not valid/);
 });
