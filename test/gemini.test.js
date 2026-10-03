@@ -63,7 +63,7 @@ test('does not retry an error a retry cannot fix', async () => {
 test('treats an unreachable server as retryable', async () => {
   process.env.TGVOICE_GEMINI_API = 'http://127.0.0.1:1';
 
-  await assert.rejects(transcribe(request, fast), { retryable: true, attempts: 2 });
+  await assert.rejects(transcribe(request, fast), { message: 'ຕໍ່ຫາ Gemini ບໍ່ໄດ້ (ECONNREFUSED)', retryable: true, attempts: 2 });
 });
 
 test('returns an empty string when Gemini hears nothing', async () => {

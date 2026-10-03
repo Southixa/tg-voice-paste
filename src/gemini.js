@@ -1,4 +1,5 @@
 import { setTimeout as sleep } from 'node:timers/promises';
+import { networkErrorCode } from './net.js';
 
 const DEFAULT_API = 'https://generativelanguage.googleapis.com';
 const REQUEST_TIMEOUT_MS = 60_000;
@@ -35,7 +36,7 @@ async function send(path, apiKey, init) {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (err) {
-    throw new GeminiError(`ຕໍ່ຫາ Gemini ບໍ່ໄດ້ (${err.cause?.code ?? err.name})`, true);
+    throw new GeminiError(`ຕໍ່ຫາ Gemini ບໍ່ໄດ້ (${networkErrorCode(err)})`, true);
   }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {

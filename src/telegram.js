@@ -1,3 +1,5 @@
+import { networkErrorCode } from './net.js';
+
 const DEFAULT_API = 'https://api.telegram.org';
 const REQUEST_TIMEOUT_MS = 20_000;
 const DOWNLOAD_TIMEOUT_MS = 60_000;
@@ -23,7 +25,7 @@ export function createTelegram(token) {
     try {
       return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
     } catch (err) {
-      throw new TelegramError(scrub(`ຕໍ່ຫາ Telegram ບໍ່ໄດ້ (${err.cause?.code ?? err.name})`), 0);
+      throw new TelegramError(scrub(`ຕໍ່ຫາ Telegram ບໍ່ໄດ້ (${networkErrorCode(err)})`), 0);
     }
   }
 
