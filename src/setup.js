@@ -166,6 +166,7 @@ export async function runSetup({
       await telegram.sendMessage(owner.chatId, PAIRED_MESSAGE);
       say(`  ✅ ຈັບຄູ່ກັບ ${owner.name} ແລ້ວ. ຄົນອື່ນສັ່ງ bot ນີ້ບໍ່ໄດ້.`);
     }
+    if (preset.translate !== undefined) config.translate = preset.translate;
     saveConfig(config);
 
     say('\n4/4  ທົດສອບ paste');

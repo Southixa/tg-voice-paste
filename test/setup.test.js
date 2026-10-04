@@ -166,3 +166,17 @@ test('a rejected value given up front falls back to asking', async () => {
   assert.equal(config.geminiApiKey, 'good-key');
   assert.match(term.printed(), /API key: expi…789\n {2}❌ Gemini 400: API key not valid/);
 });
+
+test('a language given up front is saved with the rest', async () => {
+  const term = terminal([]);
+  const paste = async (text) => term.input.write(`${text}\n`);
+
+  await runSetup({
+    input: term.input,
+    output: term.output,
+    paste,
+    preset: { geminiApiKey: 'good-key', botToken: TOKEN, ownerId: 111, translate: true },
+  });
+
+  assert.equal(JSON.parse(fs.readFileSync(path.join(home, 'config.json'), 'utf8')).translate, true);
+});
